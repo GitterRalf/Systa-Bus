@@ -1,0 +1,8 @@
+Version	Datum		Bearbeiter	Beschreibung
+===================================================================
+1.0.0	2014.03.29	R. Tralow   - Erstellung
+1.0.3   2014.05.01	R. Tralow   - Über-Dialog
+                                    - Icon Ressourcen hinzugefügt
+1.0.4	2014.12.01	R. Tralow   - Falsche Berechnung bei negativen Temperaturen
+1.0.5   2017.10.01      R. Tralow   - Wechsel auf Qt 5.3.2
+                                    -

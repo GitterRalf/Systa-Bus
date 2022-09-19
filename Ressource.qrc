@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/images">
+        <file>images/logo.jpg</file>
+        <file>images/logo.gif</file>
+        <file>images/logo_g.gif</file>
+        <file>images/logo.ico</file>
+    </qresource>
+</RCC>
