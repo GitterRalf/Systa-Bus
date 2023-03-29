@@ -71,7 +71,7 @@ private:
 
     QSettings *Settings;
 
-    QSerialPort Port;
+    QSerialPort ComPort;
 
     QFile CsvFile;
     QFile DebugFile;

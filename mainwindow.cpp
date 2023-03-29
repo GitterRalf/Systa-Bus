@@ -12,7 +12,7 @@
 #include <QTcpSocket>
 
 
-const QString VERSION = "V 1.2.0";
+const QString VERSION = "V 1.2.1";
 
 
 #define DEBUG_BYTES 0
@@ -51,9 +51,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     PortTimeoutTimer = new QTimer(this);
     PortTimeoutTimer->setInterval(3000);
-
     connect (PortTimeoutTimer, SIGNAL(timeout()), this, SLOT(portTimeoutHandler()));
-
 
     connect (UiSettings.cb_Comport, SIGNAL(activated(QString)), this, SLOT(openPort(QString)));
     connect (Ui->pb_Start, SIGNAL(clicked()), this, SLOT(start()));
@@ -64,8 +62,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect (Ui->pb_XFit, SIGNAL(clicked()), this, SLOT(xFit()));
     connect (Ui->pb_YFit, SIGNAL(clicked()), this, SLOT(yFit()));
 
-    connect (&Port, SIGNAL(readyRead()), this, SLOT(readPort()));
-    connect (&Port, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(portError(QSerialPort::SerialPortError)));
+    connect (&ComPort, SIGNAL(readyRead()), this, SLOT(readPort()));
+    connect (&ComPort, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(portError(QSerialPort::SerialPortError)));
 
     connect (Ui->actionZeige_Plotfenster, SIGNAL(triggered(bool)), Ui->widget_Plot, SLOT(setVisible(bool)));
     connect (Ui->actionZeige_Log_Einstellungen, SIGNAL(triggered(bool)), Ui->groupBox_Log, SLOT(setVisible(bool)));
@@ -302,28 +300,29 @@ void MainWindow::openPort(QString name)
 {
     Ui->cb_ComportOk->setChecked(false);
 
-    if (Port.isOpen())
+//    if (ComPort.isOpen())
     {
-        Port.close();
+        ComPort.close();
+        ComPort.clearError();
     }
 
-    Port.setPortName(name);
+    ComPort.setPortName(name);
 
     Ui->te_Data->clear();
 
-    if (Port.open(QIODevice::ReadWrite))
+    if (ComPort.open(QIODevice::ReadWrite))
     {
-        Port.setBaudRate(9600);
-        Port.setDataBits(QSerialPort::Data8);
-        Port.setStopBits(QSerialPort::OneStop);
-        Port.setParity(QSerialPort::NoParity);
-        Port.setBreakEnabled(false);
-        Port.setFlowControl(QSerialPort::NoFlowControl);
-        Port.setReadBufferSize(10000);
-        Port.setRequestToSend(true);
-        Port.setDataTerminalReady(true);
+        ComPort.setBaudRate(9600);
+        ComPort.setDataBits(QSerialPort::Data8);
+        ComPort.setStopBits(QSerialPort::OneStop);
+        ComPort.setParity(QSerialPort::NoParity);
+        ComPort.setBreakEnabled(false);
+        ComPort.setFlowControl(QSerialPort::NoFlowControl);
+        ComPort.setReadBufferSize(10000);
+        ComPort.setRequestToSend(true);
+        ComPort.setDataTerminalReady(true);
 
-        Port.clear(QSerialPort::AllDirections);
+        ComPort.clear(QSerialPort::AllDirections);
         Ui->te_Data->append("Port opened");
         Ui->cb_ComportOk->setChecked(true);
     }
@@ -430,9 +429,9 @@ void MainWindow::readPort(void)
     static int countPakets[4] = {0,0,0,0};
     static int countErrors[4] = {0,0,0,0};
 
-    while (!Port.atEnd())
+    while (!ComPort.atEnd())
     {
-        Port.read(&buffer, 1);
+        ComPort.read(&buffer, 1);
 
         sync <<= 8;
         sync |= buffer;
