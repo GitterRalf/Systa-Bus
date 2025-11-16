@@ -12,7 +12,7 @@
 #include <QTcpSocket>
 
 
-const QString VERSION = "V 1.2.1";
+const QString VERSION = "V 1.3.2";
 
 
 #define DEBUG_BYTES 0
@@ -29,7 +29,7 @@ MainWindow::MainWindow(QWidget *parent) :
     Ui->setupUi(this);
 
 
-    SettingsForm =new QDialog;
+    SettingsForm =new QDialog(this);
     SettingsForm->setModal(true);
     UiSettings.setupUi(SettingsForm);
 
@@ -72,6 +72,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     AboutDialog *about = new AboutDialog(this, VERSION);
     connect(Ui->actionAbout, SIGNAL(triggered(bool)), about, SLOT(show()));
+    connect(Ui->action_ber_Qt, &QAction::triggered, this, [this]() { QMessageBox::aboutQt(this, tr("Über Qt")); });
+
 
     connect( UiSettings.cb_ServerAktiv, SIGNAL(clicked(bool)), this, SLOT(serverStart(bool)));
     connect (&Server, SIGNAL(clientConnected(bool)), Ui->cb_ClientConnected, SLOT(setChecked(bool)));
@@ -300,7 +302,7 @@ void MainWindow::openPort(QString name)
 {
     Ui->cb_ComportOk->setChecked(false);
 
-//    if (ComPort.isOpen())
+    //    if (ComPort.isOpen())
     {
         ComPort.close();
         ComPort.clearError();
@@ -426,8 +428,8 @@ void MainWindow::readPort(void)
     static double logTime = 0;
     static double logTimeServer = 0;
 
-    static int countPakets[4] = {0,0,0,0};
-    static int countErrors[4] = {0,0,0,0};
+    static quint64 countPakets[4] = {0,0,0,0};
+    static quint64 countErrors[4] = {0,0,0,0};
 
     while (!ComPort.atEnd())
     {
@@ -530,6 +532,7 @@ void MainWindow::readPort(void)
                                         Ui->te_Data->append(QString("Gesamt: %1 kWh").arg(energyTotal));
                                         Ui->te_Data->append(QString("Zeit: %1").arg(dayTime));
                                         Ui->te_Data->append(QString("Status: %1").arg(getStatus(status)));
+                                        Ui->te_Data->append(QString("ErrorCode: %1").arg(status));
 
                                         if( Ui->actionZeige_Plotfenster->isChecked() )
                                         {
@@ -542,7 +545,7 @@ void MainWindow::readPort(void)
 
                                         if( CsvFile.isOpen() )
                                         {
-                                            CsvFile.write(QString("%1;%2;%3;%4;%5;%6;%7;%8;%9;%10;%11\n").arg(QDateTime::currentDateTime().toString()).arg(tsa).arg(tw).arg(tsv).arg(tam).arg(tse).arg(flow).arg(pwm).arg(energyDay).arg(energyTotal).arg(getStatus(status)).toLatin1());
+                                            CsvFile.write(QString("%1;%2;%3;%4;%5;%6;%7;%8;%9;%10;%11;\n").arg(QDateTime::currentDateTime().toString()).arg(tsa).arg(tw).arg(tsv).arg(tam).arg(tse).arg(flow).arg(pwm).arg(energyDay).arg(energyTotal).arg(getStatus(status)).toLatin1());
                                         }
 
                                         Ui->te_Data->append(QString("\nPakete: %1 Ok / %2 Fehler").arg(countPakets[0]).arg(countErrors[0]));
@@ -563,18 +566,24 @@ void MainWindow::readPort(void)
 
                                         if( Server.hasConnections() )
                                         {
-                                            Server.send(QString("TSA:%1;TW:%2;TSV:%3;TAM:%4;TSE:%5;FLOW:%6;PWM:%7;EnergyDay:%8;EnergyTotal:%9;Status:%10;").arg(tsa).arg(tw).arg(tsv).arg(tam).arg(tse).arg(flow).arg(pwm).arg(energyDay).arg(energyTotal).arg(getStatus(status)));
+                                            Server.send(QString("TSA:%1;TW:%2;TSV:%3;TAM:%4;TSE:%5;FLOW:%6;PWM:%7;EnergyDay:%8;EnergyTotal:%9;Status:%10;ErrorCode:%11;").arg(tsa).arg(tw).arg(tsv).arg(tam).arg(tse).arg(flow).arg(pwm).arg(energyDay).arg(energyTotal).arg(getStatus(status)).arg(status));
                                         }
                                     }
 
                                     if( zeit > StopTime)
                                     {
                                         StopTime += 10;
-                                        xFit();
+                                        if( Ui->actionZeige_Plotfenster->isChecked() )
+                                        {
+                                            xFit();
+                                        }
                                     }
                                     else
                                     {
-                                        Ui->customPlot->replot();
+                                        if( Ui->actionZeige_Plotfenster->isChecked() )
+                                        {
+                                            Ui->customPlot->replot();
+                                        }
                                     }
 
                                     debugOutput(1, data, count);
@@ -825,16 +834,19 @@ QString MainWindow::getStatus(int code)
             msg = "Speicher unterkühlt";
             break;
         case 22:
-            msg = "Fühler TSA defekt";
+            msg = "Ausfall Kollektorfühler (TSA)";
             break;
         case 23:
-            msg = "Fühler TSE defekt";
+            msg = "Ausfall Fühler TSE";
             break;
         case 24:
-            msg = "Fühler TWU defekt";
+            msg = "Ausfall Fühler TWU";
             break;
         case 26:
-            msg = "Fühler TW2 defekt";
+            msg = "Ausfall Fühler TW2";
+            break;
+        case 27:
+            msg = "Ausfall Außensensor (TWA)";
             break;
         case 34:
             msg = "Speicher überhitzt";

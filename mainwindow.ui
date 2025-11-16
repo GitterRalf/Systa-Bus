@@ -271,6 +271,7 @@
     </property>
     <addaction name="actionKurzreferenz"/>
     <addaction name="actionAbout"/>
+    <addaction name="action_ber_Qt"/>
    </widget>
    <addaction name="menuDatei"/>
    <addaction name="menuEinstellungen"/>
@@ -319,6 +320,11 @@
   <action name="actionKurzreferenz">
    <property name="text">
     <string>Kurzreferenz</string>
+   </property>
+  </action>
+  <action name="action_ber_Qt">
+   <property name="text">
+    <string>Über Qt</string>
    </property>
   </action>
  </widget>

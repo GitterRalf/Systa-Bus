@@ -90,7 +90,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>(c) 2014</string>
+    <string>(c) 2014 - 2025</string>
    </property>
   </widget>
   <widget class="QPushButton" name="pb_OK">

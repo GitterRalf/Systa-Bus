@@ -7,8 +7,9 @@ Server::Server(QObject *parent) :
     QObject(parent)
 {
     server = new QTcpServer(this);
-    connect(server, SIGNAL(newConnection()),
-            this, SLOT(on_newConnection()));
+    connect(server, SIGNAL(newConnection()), this, SLOT(on_newConnection()));
+    connect(socket, SIGNAL(disconnected()), this, SLOT(on_disconnected()));
+    connect(socket, SIGNAL(readyRead()), this, SLOT(on_readyRead()));
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -29,10 +30,6 @@ void Server::on_newConnection()
         clientConnectState = true;
         emit clientConnected(true);
     }
-    connect(socket, SIGNAL(disconnected()),
-            this, SLOT(on_disconnected()));
-    connect(socket, SIGNAL(readyRead()),
-            this, SLOT(on_readyRead()));
 }
 
 
