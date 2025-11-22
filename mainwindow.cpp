@@ -12,7 +12,7 @@
 #include <QTcpSocket>
 
 
-const QString VERSION = "V 1.3.2";
+const QString VERSION = "V 1.3.3";
 
 
 #define DEBUG_BYTES 0

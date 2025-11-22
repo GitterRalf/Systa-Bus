@@ -8,8 +8,6 @@ Server::Server(QObject *parent) :
 {
     server = new QTcpServer(this);
     connect(server, SIGNAL(newConnection()), this, SLOT(on_newConnection()));
-    connect(socket, SIGNAL(disconnected()), this, SLOT(on_disconnected()));
-    connect(socket, SIGNAL(readyRead()), this, SLOT(on_readyRead()));
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -24,11 +22,17 @@ void Server::listen(QHostAddress ip, const quint16 port)
 void Server::on_newConnection()
 {
     socket = server->nextPendingConnection();
-    if(socket->state() == QTcpSocket::ConnectedState)
+    if( socket != Q_NULLPTR )
     {
-        //qDebug() << "New connection established.\n";
-        clientConnectState = true;
-        emit clientConnected(true);
+        if(socket->state() == QTcpSocket::ConnectedState)
+        {
+            connect(socket, SIGNAL(disconnected()), this, SLOT(on_disconnected()));
+            connect(socket, SIGNAL(readyRead()), this, SLOT(on_readyRead()));
+
+            //qDebug() << "New connection established.\n";
+            clientConnectState = true;
+            emit clientConnected(true);
+        }
     }
 }
 
@@ -47,11 +51,12 @@ bool Server::send(QString str)
 
     if( hasConnections())
     {
-        if (! socket->waitForBytesWritten())
+        if( socket != Q_NULLPTR )
         {
             socket->write(str.toLatin1());
-            erg = true;
+            socket->waitForBytesWritten();
         }
+        erg = true;
     }
 
     return erg;
@@ -60,15 +65,18 @@ bool Server::send(QString str)
 // ------------------------------------------------------------------------------------------------
 void Server::on_readyRead()
 {
-    while(socket->canReadLine())
+    if( socket != Q_NULLPTR )
     {
-        QByteArray ba = socket->readLine();
-        if(strcmp(ba.constData(), "!exit\n") == 0)
+        while(socket->canReadLine())
         {
-            socket->disconnectFromHost();
-            break;
+            QByteArray ba = socket->readLine();
+            if(strcmp(ba.constData(), "!exit\n") == 0)
+            {
+                socket->disconnectFromHost();
+                break;
+            }
+            //printf(">> %s", ba.constData());
         }
-        //printf(">> %s", ba.constData());
     }
 }
 
@@ -77,9 +85,12 @@ void Server::on_readyRead()
 void Server::on_disconnected()
 {
     //qDebug() << "Connection disconnected.\n";
-    disconnect(socket, SIGNAL(disconnected()));
-    disconnect(socket, SIGNAL(readyRead()));
-    socket->deleteLater();
+    if( socket != Q_NULLPTR )
+    {
+        disconnect(socket, SIGNAL(disconnected()));
+        disconnect(socket, SIGNAL(readyRead()));
+        socket->deleteLater();
+    }
     clientConnectState = false;
     emit clientConnected(false);
 }
