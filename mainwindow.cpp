@@ -12,7 +12,7 @@
 #include <QTcpSocket>
 
 
-const QString VERSION = "V 1.3.3";
+const QString VERSION = "V 1.3.4";
 
 
 #define DEBUG_BYTES 0
@@ -133,6 +133,19 @@ MainWindow::MainWindow(QWidget *parent) :
 ///
 MainWindow::~MainWindow()
 {
+    ComCheckTimer.stop();
+    PortTimeoutTimer->stop();
+
+    if(ComPort.isOpen())
+    {
+        ComPort.close();
+    }
+
+    if(CsvFile.isOpen())
+    {
+        CsvFile.close();
+    }
+
 
     Settings->setValue("System/COMPort", UiSettings.cb_Comport->currentText());
 
@@ -151,6 +164,11 @@ MainWindow::~MainWindow()
 
     Settings->sync();
 
+    if( Settings != Q_NULLPTR )
+    {
+        Settings->deleteLater();
+    }
+
     delete Ui;
 }
 
@@ -168,7 +186,7 @@ void MainWindow::serverStart(bool startStop)
     }
     else
     {
-        Server.listen(QHostAddress::Null, UiSettings.te_ServerPort->text().toInt());
+        Server.close();
     }
 }
 

@@ -63,13 +63,13 @@ private slots:
 
 private:
 
-    Ui::MainWindow *Ui;
+    Ui::MainWindow *Ui = Q_NULLPTR;
 
-    QDialog *SettingsForm;
+    QDialog *SettingsForm = Q_NULLPTR;
 
     Ui::Setting UiSettings;
 
-    QSettings *Settings;
+    QSettings *Settings = Q_NULLPTR;
 
     QSerialPort ComPort;
 
@@ -92,7 +92,7 @@ private:
 
     class Server Server;
 
-    QTimer *PortTimeoutTimer;
+    QTimer *PortTimeoutTimer = Q_NULLPTR;
 
 };
 

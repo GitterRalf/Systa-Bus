@@ -3,6 +3,11 @@
 #include <QTcpSocket>
 #include <cstdio>
 
+// ------------------------------------------------------------------------------------------------
+///
+/// \brief Server::Server
+/// \param parent
+///
 Server::Server(QObject *parent) :
     QObject(parent)
 {
@@ -11,6 +16,11 @@ Server::Server(QObject *parent) :
 }
 
 // ------------------------------------------------------------------------------------------------
+///
+/// \brief Server::listen
+/// \param ip
+/// \param port
+///
 void Server::listen(QHostAddress ip, const quint16 port)
 {
     server->listen(ip, port);
@@ -19,8 +29,29 @@ void Server::listen(QHostAddress ip, const quint16 port)
 
 
 // ------------------------------------------------------------------------------------------------
+///
+/// \brief Server::close
+///
+void Server::close(void)
+{
+    server->close();
+}
+
+
+// ------------------------------------------------------------------------------------------------
+///
+/// \brief Server::on_newConnection
+///
 void Server::on_newConnection()
 {
+    // Alte Verbindung sauber beenden
+    if(socket != Q_NULLPTR)
+    {
+        disconnect(socket, nullptr, nullptr, nullptr);
+        socket->deleteLater();
+        socket = Q_NULLPTR;
+    }
+
     socket = server->nextPendingConnection();
     if( socket != Q_NULLPTR )
     {
@@ -38,6 +69,10 @@ void Server::on_newConnection()
 
 
 // ------------------------------------------------------------------------------------------------
+///
+/// \brief Server::hasConnections
+/// \return
+///
 bool Server::hasConnections(void)
 {
     return clientConnectState;
@@ -45,6 +80,11 @@ bool Server::hasConnections(void)
 
 
 // ------------------------------------------------------------------------------------------------
+///
+/// \brief Server::send
+/// \param str
+/// \return
+///
 bool Server::send(QString str)
 {
     bool erg = false;
@@ -62,7 +102,11 @@ bool Server::send(QString str)
     return erg;
 }
 
+
 // ------------------------------------------------------------------------------------------------
+///
+/// \brief Server::on_readyRead
+///
 void Server::on_readyRead()
 {
     if( socket != Q_NULLPTR )
@@ -82,6 +126,9 @@ void Server::on_readyRead()
 
 
 // ------------------------------------------------------------------------------------------------
+///
+/// \brief Server::on_disconnected
+///
 void Server::on_disconnected()
 {
     //qDebug() << "Connection disconnected.\n";

@@ -14,6 +14,7 @@ class Server : public QObject
 public:
     explicit Server(QObject *parent = 0);
     void listen(QHostAddress ip, const quint16 port);
+    void close(void);
 
     bool hasConnections(void);
 
@@ -30,8 +31,8 @@ public slots:
     void on_disconnected();
 
 private:
-    QTcpServer* server;
-    QTcpSocket* socket;
+    QTcpServer* server = Q_NULLPTR;
+    QTcpSocket* socket = Q_NULLPTR;
 
     bool clientConnectState;
 
