@@ -34,6 +34,7 @@ void Server::listen(QHostAddress ip, const quint16 port)
 ///
 void Server::close(void)
 {
+    clientConnectState = false;
     server->close();
 }
 
@@ -44,14 +45,6 @@ void Server::close(void)
 ///
 void Server::on_newConnection()
 {
-    // Alte Verbindung sauber beenden
-    if(socket != Q_NULLPTR)
-    {
-        disconnect(socket, nullptr, nullptr, nullptr);
-        socket->deleteLater();
-        socket = Q_NULLPTR;
-    }
-
     socket = server->nextPendingConnection();
     if( socket != Q_NULLPTR )
     {
