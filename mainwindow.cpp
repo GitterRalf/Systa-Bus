@@ -1,8 +1,3 @@
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
-#include "aboutdialog.h"
-
-
 #include <QDebug>
 #include <QKeyEvent>
 #include <QSettings>
@@ -12,8 +7,10 @@
 #include <QTcpSocket>
 
 
-const QString VERSION = "V 1.3.5";
-
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include "aboutdialog.h"
+#include "version.h"
 
 #define DEBUG_BYTES 0
 
@@ -33,7 +30,7 @@ MainWindow::MainWindow(QWidget *parent) :
     SettingsForm->setModal(true);
     UiSettings.setupUi(SettingsForm);
 
-    setWindowTitle("Systa-Bus  ("+VERSION+")");
+    setWindowTitle("Systa-Bus  ("+QString(PRODUCT_VERSION)+")");
 
     setupCustomPlot(Ui->customPlot);
 
@@ -70,7 +67,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect( Ui->menuEinstellungen, SIGNAL(aboutToShow()), SettingsForm, SLOT(show()));
 
-    AboutDialog *about = new AboutDialog(this, VERSION);
+    AboutDialog *about = new AboutDialog(this, QString(PRODUCT_VERSION));
     connect(Ui->actionAbout, SIGNAL(triggered(bool)), about, SLOT(show()));
     connect(Ui->action_ber_Qt, &QAction::triggered, this, [this]() { QMessageBox::aboutQt(this, tr("Über Qt")); });
 

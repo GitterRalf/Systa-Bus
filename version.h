@@ -1,0 +1,57 @@
+#ifndef VERSION_H
+#define VERSION_H
+
+
+
+// Version
+#define PRODUCT_NAME		"SystaBus"
+#define PRODUCTCODE			0
+#define VERSION_MAJOR		1
+#define VERSION_MINOR		3
+#define VERSION_BUILD		5
+
+#define APP_DESCRIPTION		"SystaBus"
+
+#define COMPANY_NAME		""
+#define COMPANY_URL			"www.ringwelt.de"
+#define COMPANY_COUNTRY		"Germany"
+#define COMPANY_REGION		""
+#define COMPANY_POSTALCODE	""
+#define COMPANY_STREET		""
+
+
+#define _T2_(x) #x
+#define _T1_(x) _T2_(x)
+#if VERSION_BUILD < 80
+	#define PRODUCT_VERSION _T1_(PRODUCTCODE) "." _T1_(VERSION_MAJOR) "." _T1_(VERSION_MINOR) "." _T1_(VERSION_BUILD)
+	#define PRODUCT_VERSION_WIN  PRODUCT_VERSION
+#else
+	#define PRODUCT_VERSION _T1_(PRODUCTCODE) "." _T1_(VERSION_MAJOR) "." _T1_(VERSION_MINOR) "." _T1_(VERSION_BUILD) " Alpha " "[" GIT_HASH "]"
+	#define PRODUCT_VERSION_WIN _T1_(PRODUCTCODE) "." _T1_(VERSION_MAJOR) "." _T1_(VERSION_MINOR) "." _T1_(VERSION_BUILD) " Alpha"				// Windows hat Probleme mit dem Hash im Namen; also weglassen
+#endif
+
+
+#define VERSION_STRING PRODUCT_NAME " V" PRODUCT_VERSION
+
+
+// Folgende Defines werden für Windows-Ressourcen- Einträge verwendet
+#define VER_FILEVERSION             PRODUCTCODE,VERSION_MAJOR,VERSION_MINOR,VERSION_BUILD
+#define VER_FILEVERSION_STR         PRODUCT_VERSION_WIN
+
+#define VER_PRODUCTVERSION          PRODUCTCODE,VERSION_MAJOR,VERSION_MINOR,VERSION_BUILD
+#define VER_PRODUCTVERSION_STR      PRODUCT_VERSION_WIN
+
+#define VER_COMPANYNAME_STR         COMPANY_NAME
+#define VER_DESCRIPTION_STR			APP_DESCRIPTION
+#define VER_INTERNALNAME_STR        PRODUCT_NAME
+#define VER_LEGALCOPYRIGHT_STR      "Copyright (c) 2014-2025 " COMPANY_NAME
+#define VER_LEGALTRADEMARKS1_STR    "All Rights Reserved"
+#define VER_ORIGINALFILENAME_STR    PRODUCT_NAME _T1_(.EXE)
+#define VER_PRODUCTNAME_STR			PRODUCT_NAME
+
+#define VER_COMPANYDOMAIN_STR       COMPANY_URL
+
+
+
+
+#endif // VERSION_H

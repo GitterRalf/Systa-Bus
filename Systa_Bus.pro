@@ -16,7 +16,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets serialport printsupport network
 
 TARGET = Systa_Bus
 TEMPLATE = app
-RC_FILE = windows.rc
+RC_FILE = Systa_Bus.rc
 
 SOURCES += main.cpp\
         mainwindow.cpp \
@@ -25,17 +25,18 @@ SOURCES += main.cpp\
     aboutdialog.cpp
 
 HEADERS  += mainwindow.h \
+    Systa_Bus.rc \
     qcustomplot/qcustomplot.h \
     server.h \
-    aboutdialog.h
+    aboutdialog.h \
+    version.h
 
 FORMS    += mainwindow.ui \
     setting.ui \
     aboutdialog.ui
 
 OTHER_FILES += \
-    ReleaseNotes.txt \
-    windows.rc
+    ReleaseNotes.txt
 
 RESOURCES += \
     Ressource.qrc
