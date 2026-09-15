@@ -59,6 +59,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect (Ui->pb_XFit, SIGNAL(clicked()), this, SLOT(xFit()));
     connect (Ui->pb_YFit, SIGNAL(clicked()), this, SLOT(yFit()));
 
+    ComPort.setSettingsRestoredOnClose(false);
+
     connect (&ComPort, SIGNAL(readyRead()), this, SLOT(readPort()));
     connect (&ComPort, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(portError(QSerialPort::SerialPortError)));
 
