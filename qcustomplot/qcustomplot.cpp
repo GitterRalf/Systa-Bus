@@ -24,6 +24,19 @@
 ****************************************************************************/
 
 #include "qcustomplot.h"
+#include <QPageSize>
+#include <QWheelEvent>
+
+namespace {
+QPoint wheelPosition(const QWheelEvent *event)
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+  return event->position().toPoint();
+#else
+  return event->pos();
+#endif
+}
+}
 
 
 
@@ -3205,7 +3218,7 @@ Qt::Alignment QCPLayoutInset::insetAlignment(int index) const
   else
   {
     qDebug() << Q_FUNC_INFO << "Invalid element index:" << index;
-    return 0;
+    return Qt::Alignment();
   }
 }
 
@@ -4112,8 +4125,8 @@ QCPAxis::QCPAxis(QCPAxisRect *parent, AxisType type) :
   mLabelCache(16), // cache at most 16 (tick) labels
   mLowestVisibleTick(0),
   mHighestVisibleTick(-1),
-  mExponentialChar('e'), // will be updated with locale sensitive values in setupTickVector
-  mPositiveSignChar('+'), // will be updated with locale sensitive values in setupTickVector
+  mExponentialSymbol(QStringLiteral("e")), // will be updated with locale sensitive values in setupTickVector
+  mPositiveSign(QStringLiteral("+")), // will be updated with locale sensitive values in setupTickVector
   mCachedMarginValid(false),
   mCachedMargin(0)
 {
@@ -5552,8 +5565,8 @@ void QCPAxis::setupTickVectors()
   }
 
   // generate tick labels according to tick positions:
-  mExponentialChar = mParentPlot->locale().exponential();   // will be needed when drawing the numbers generated here, in getTickLabelData()
-  mPositiveSignChar = mParentPlot->locale().positiveSign(); // will be needed when drawing the numbers generated here, in getTickLabelData()
+  mExponentialSymbol = mParentPlot->locale().exponential();   // will be needed when drawing the numbers generated here, in getTickLabelData()
+  mPositiveSign = mParentPlot->locale().positiveSign(); // will be needed when drawing the numbers generated here, in getTickLabelData()
   if (mAutoTickLabels)
   {
     int vecsize = mTickVector.size();
@@ -6055,7 +6068,7 @@ QCPAxis::TickLabelData QCPAxis::getTickLabelData(const QFont &font, const QStrin
   int ePos = -1;
   if (mAutoTickLabels && mNumberBeautifulPowers && mTickLabelType == ltNumber)
   {
-    ePos = text.indexOf('e');
+    ePos = text.indexOf(mExponentialSymbol, 0, Qt::CaseInsensitive);
     if (ePos > -1)
       useBeautifulPowers = true;
   }
@@ -6072,12 +6085,14 @@ QCPAxis::TickLabelData QCPAxis::getTickLabelData(const QFont &font, const QStrin
       result.basePart = "10";
     else
       result.basePart += (mNumberMultiplyCross ? QString(QChar(215)) : QString(QChar(183))) + "10";
-    result.expPart = text.mid(ePos+1);
+    result.expPart = text.mid(ePos + mExponentialSymbol.size());
     // clip "+" and leading zeros off expPart:
-    while (result.expPart.at(1) == '0' && result.expPart.length() > 2) // length > 2 so we leave one zero when numberFormatChar is 'e'
-      result.expPart.remove(1, 1);
-    if (result.expPart.at(0) == mPositiveSignChar)
-      result.expPart.remove(0, 1);
+    const auto signLength = result.expPart.startsWith(mPositiveSign) ? mPositiveSign.size() : 0;
+    const auto digitStart = signLength > 0 ? signLength : 1;
+    while (result.expPart.size() > digitStart + 1 && result.expPart.at(digitStart) == '0')
+      result.expPart.remove(digitStart, 1);
+    if (signLength > 0)
+      result.expPart.remove(0, signLength);
     // prepare smaller font for exponent:
     result.expFont = font;
     result.expFont.setPointSize(result.expFont.pointSize()*0.75);
@@ -7233,7 +7248,7 @@ QCPItemAnchor::QCPItemAnchor(QCustomPlot *parentPlot, QCPAbstractItem *parentIte
 QCPItemAnchor::~QCPItemAnchor()
 {
   // unregister as parent at children:
-  QList<QCPItemPosition*> currentChildren(mChildren.toList());
+  QList<QCPItemPosition*> currentChildren(mChildren.values());
   for (int i=0; i<currentChildren.size(); ++i)
     currentChildren.at(i)->setParentAnchor(0); // this acts back on this anchor and child removes itself from mChildren
 }
@@ -7340,7 +7355,7 @@ QCPItemPosition::~QCPItemPosition()
   // unregister as parent at children:
   // Note: this is done in ~QCPItemAnchor again, but it's important QCPItemPosition does it itself, because only then
   //       the setParentAnchor(0) call the correct QCPItemPosition::pixelPoint function instead of QCPItemAnchor::pixelPoint
-  QList<QCPItemPosition*> currentChildren(mChildren.toList());
+  QList<QCPItemPosition*> currentChildren(mChildren.values());
   for (int i=0; i<currentChildren.size(); ++i)
     currentChildren.at(i)->setParentAnchor(0); // this acts back on this anchor and child removes itself from mChildren
   // unregister as child in parent:
@@ -10138,7 +10153,9 @@ void QCustomPlot::replot()
   painter.begin(&mPaintBuffer);
   if (painter.isActive()) 
   {
-    painter.setRenderHint(QPainter::HighQualityAntialiasing); // to make Antialiasing look good if using the OpenGL graphicssystem
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    painter.setRenderHint(QPainter::HighQualityAntialiasing); // for the legacy OpenGL graphics system
+#endif
     if (mBackgroundBrush.style() != Qt::SolidPattern && mBackgroundBrush.style() != Qt::NoBrush)
       painter.fillRect(mViewport, mBackgroundBrush);
     draw(&painter);
@@ -10236,7 +10253,8 @@ bool QCustomPlot::savePdf(const QString &fileName, bool noCosmeticPen, int width
   printer.setColorMode(QPrinter::Color);
   QRect oldViewport = viewport();
   setViewport(QRect(0, 0, newWidth, newHeight));
-  printer.setPaperSize(viewport().size(), QPrinter::DevicePixel);
+  const QSizeF pageSizeInPoints = QSizeF(viewport().size()) * (72.0 / printer.resolution());
+  printer.setPageSize(QPageSize(pageSizeInPoints, QPageSize::Point, QString(), QPageSize::ExactMatch));
   QCPPainter printpainter;
   if (printpainter.begin(&printer))
   {
@@ -10606,7 +10624,7 @@ void QCustomPlot::wheelEvent(QWheelEvent *event)
   emit mouseWheel(event);
   
   // call event of affected layout element:
-  if (QCPLayoutElement *el = layoutElementAt(event->pos()))
+  if (QCPLayoutElement *el = layoutElementAt(wheelPosition(event)))
     el->wheelEvent(event);
   
   QWidget::wheelEvent(event);
@@ -11041,7 +11059,7 @@ void QCPGraph::setData(const QVector<double> &key, const QVector<double> &value)
   {
     newData.key = key[i];
     newData.value = value[i];
-    mData->insertMulti(newData.key, newData);
+    mData->insert(newData.key, newData);
   }
 }
 
@@ -11067,7 +11085,7 @@ void QCPGraph::setDataValueError(const QVector<double> &key, const QVector<doubl
     newData.value = value[i];
     newData.valueErrorMinus = valueError[i];
     newData.valueErrorPlus = valueError[i];
-    mData->insertMulti(key[i], newData);
+    mData->insert(key[i], newData);
   }
 }
 
@@ -11094,7 +11112,7 @@ void QCPGraph::setDataValueError(const QVector<double> &key, const QVector<doubl
     newData.value = value[i];
     newData.valueErrorMinus = valueErrorMinus[i];
     newData.valueErrorPlus = valueErrorPlus[i];
-    mData->insertMulti(key[i], newData);
+    mData->insert(key[i], newData);
   }
 }
 
@@ -11120,7 +11138,7 @@ void QCPGraph::setDataKeyError(const QVector<double> &key, const QVector<double>
     newData.value = value[i];
     newData.keyErrorMinus = keyError[i];
     newData.keyErrorPlus = keyError[i];
-    mData->insertMulti(key[i], newData);
+    mData->insert(key[i], newData);
   }
 }
 
@@ -11147,7 +11165,7 @@ void QCPGraph::setDataKeyError(const QVector<double> &key, const QVector<double>
     newData.value = value[i];
     newData.keyErrorMinus = keyErrorMinus[i];
     newData.keyErrorPlus = keyErrorPlus[i];
-    mData->insertMulti(key[i], newData);
+    mData->insert(key[i], newData);
   }
 }
 
@@ -11176,7 +11194,7 @@ void QCPGraph::setDataBothError(const QVector<double> &key, const QVector<double
     newData.keyErrorPlus = keyError[i];
     newData.valueErrorMinus = valueError[i];
     newData.valueErrorPlus = valueError[i];
-    mData->insertMulti(key[i], newData);
+    mData->insert(key[i], newData);
   }
 }
 
@@ -11207,7 +11225,7 @@ void QCPGraph::setDataBothError(const QVector<double> &key, const QVector<double
     newData.keyErrorPlus = keyErrorPlus[i];
     newData.valueErrorMinus = valueErrorMinus[i];
     newData.valueErrorPlus = valueErrorPlus[i];
-    mData->insertMulti(key[i], newData);
+    mData->insert(key[i], newData);
   }
 }
 
@@ -11324,7 +11342,7 @@ void QCPGraph::addData(const QCPDataMap &dataMap)
 */
 void QCPGraph::addData(const QCPData &data)
 {
-  mData->insertMulti(data.key, data);
+  mData->insert(data.key, data);
 }
 
 /*! \overload
@@ -11336,7 +11354,7 @@ void QCPGraph::addData(double key, double value)
   QCPData newData;
   newData.key = key;
   newData.value = value;
-  mData->insertMulti(newData.key, newData);
+  mData->insert(newData.key, newData);
 }
 
 /*! \overload
@@ -11351,7 +11369,7 @@ void QCPGraph::addData(const QVector<double> &keys, const QVector<double> &value
   {
     newData.key = keys[i];
     newData.value = values[i];
-    mData->insertMulti(newData.key, newData);
+    mData->insert(newData.key, newData);
   }
 }
 
@@ -13218,7 +13236,7 @@ void QCPCurve::setData(const QVector<double> &t, const QVector<double> &key, con
     newData.t = t[i];
     newData.key = key[i];
     newData.value = value[i];
-    mData->insertMulti(newData.t, newData);
+    mData->insert(newData.t, newData);
   }
 }
 
@@ -13238,7 +13256,7 @@ void QCPCurve::setData(const QVector<double> &key, const QVector<double> &value)
     newData.t = i; // no t vector given, so we assign t the index of the key/value pair
     newData.key = key[i];
     newData.value = value[i];
-    mData->insertMulti(newData.t, newData);
+    mData->insert(newData.t, newData);
   }
 }
 
@@ -13281,7 +13299,7 @@ void QCPCurve::addData(const QCPCurveDataMap &dataMap)
 */
 void QCPCurve::addData(const QCPCurveData &data)
 {
-  mData->insertMulti(data.t, data);
+  mData->insert(data.t, data);
 }
 
 /*! \overload
@@ -13294,7 +13312,7 @@ void QCPCurve::addData(double t, double key, double value)
   newData.t = t;
   newData.key = key;
   newData.value = value;
-  mData->insertMulti(newData.t, newData);
+  mData->insert(newData.t, newData);
 }
 
 /*! \overload
@@ -13314,7 +13332,7 @@ void QCPCurve::addData(double key, double value)
     newData.t = 0;
   newData.key = key;
   newData.value = value;
-  mData->insertMulti(newData.t, newData);
+  mData->insert(newData.t, newData);
 }
 
 /*! \overload
@@ -13332,7 +13350,7 @@ void QCPCurve::addData(const QVector<double> &ts, const QVector<double> &keys, c
     newData.t = ts[i];
     newData.key = keys[i];
     newData.value = values[i];
-    mData->insertMulti(newData.t, newData);
+    mData->insert(newData.t, newData);
   }
 }
 
@@ -13930,7 +13948,7 @@ void QCPBars::setData(const QVector<double> &key, const QVector<double> &value)
   {
     newData.key = key[i];
     newData.value = value[i];
-    mData->insertMulti(newData.key, newData);
+    mData->insert(newData.key, newData);
   }
 }
 
@@ -14015,7 +14033,7 @@ void QCPBars::addData(const QCPBarDataMap &dataMap)
 */
 void QCPBars::addData(const QCPBarData &data)
 {
-  mData->insertMulti(data.key, data);
+  mData->insert(data.key, data);
 }
 
 /*! \overload
@@ -14027,7 +14045,7 @@ void QCPBars::addData(double key, double value)
   QCPBarData newData;
   newData.key = key;
   newData.value = value;
-  mData->insertMulti(newData.key, newData);
+  mData->insert(newData.key, newData);
 }
 
 /*! \overload
@@ -14043,7 +14061,7 @@ void QCPBars::addData(const QVector<double> &keys, const QVector<double> &values
   {
     newData.key = keys[i];
     newData.value = values[i];
-    mData->insertMulti(newData.key, newData);
+    mData->insert(newData.key, newData);
   }
 }
 
@@ -17793,8 +17811,8 @@ void QCPAxisRect::mouseReleaseEvent(QMouseEvent *event)
   dependant on the mouse wheel delta (which direction the wheel was rotated) to provide a natural
   zooming feel. The Strength of the zoom can be controlled via \ref setRangeZoomFactor.
   
-  Note, that event->delta() is usually +/-120 for single rotation steps. However, if the mouse
-  wheel is turned rapidly, many steps may bunch up to one event, so the event->delta() may then be
+  Note, that the angle delta is usually +/-120 for single rotation steps. However, if the mouse
+  wheel is turned rapidly, many steps may bunch up to one event, so the angle delta may then be
   multiples of 120. This is taken into account here, by calculating \a wheelSteps and using it as
   exponent of the range zoom factor. This takes care of the wheel direction automatically, by
   inverting the factor, when the wheel step is negative (f^-1 = 1/f).
@@ -17807,18 +17825,20 @@ void QCPAxisRect::wheelEvent(QWheelEvent *event)
     if (mRangeZoom != 0)
     {
       double factor;
-      double wheelSteps = event->delta()/120.0; // a single step delta is +/-120 usually
+      const QPoint delta = event->angleDelta();
+      const QPoint position = wheelPosition(event);
+      const double wheelSteps = (delta.y() != 0 ? delta.y() : delta.x()) / 120.0;
       if (mRangeZoom.testFlag(Qt::Horizontal))
       {
         factor = pow(mRangeZoomFactorHorz, wheelSteps);
         if (mRangeZoomHorzAxis.data())
-          mRangeZoomHorzAxis.data()->scaleRange(factor, mRangeZoomHorzAxis.data()->pixelToCoord(event->pos().x()));
+          mRangeZoomHorzAxis.data()->scaleRange(factor, mRangeZoomHorzAxis.data()->pixelToCoord(position.x()));
       }
       if (mRangeZoom.testFlag(Qt::Vertical))
       {
         factor = pow(mRangeZoomFactorVert, wheelSteps);
         if (mRangeZoomVertAxis.data())
-          mRangeZoomVertAxis.data()->scaleRange(factor, mRangeZoomVertAxis.data()->pixelToCoord(event->pos().y()));
+          mRangeZoomVertAxis.data()->scaleRange(factor, mRangeZoomVertAxis.data()->pixelToCoord(position.y()));
       }
       mParentPlot->replot();
     }

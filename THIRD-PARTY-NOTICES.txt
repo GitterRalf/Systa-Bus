@@ -1,0 +1,23 @@
+Systa-Bus - third-party notices
+===============================
+
+QCustomPlot 1.1.1
+-----------------
+Copyright (C) 2011, 2012, 2013 Emanuel Eichhammer.
+QCustomPlot is licensed under GNU GPL version 3 or later. The application
+build includes the QCustomPlot sources from the qcustomplot/ directory,
+including the changes for Qt 6. See licenses/QCustomPlot-GPL-3.0.txt and
+qcustomplot/GPL.txt in the project source.
+
+Qt
+--
+The x64 installer includes the dynamically linked Qt 6.11.0 runtime and
+plugins. The x86 installer includes Qt 5.15.19. See the LGPLv3 and GPLv3
+texts in licenses/. Matching upstream source archives are available at:
+https://download.qt.io/archive/qt/6.11/6.11.0/submodules/
+https://download.qt.io/archive/qt/5.15/5.15.19/submodules/
+
+GCC and MinGW-w64
+----------------
+See the GPLv3 and GCC Runtime Library Exception texts in licenses/.
+The MinGW-w64 winpthreads notices are in licenses/MinGW-w64-winpthreads.txt.

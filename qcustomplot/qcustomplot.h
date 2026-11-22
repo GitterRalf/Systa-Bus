@@ -1145,7 +1145,7 @@ protected:
   QCPGrid *mGrid;
   QCache<QString, CachedLabel> mLabelCache;
   int mLowestVisibleTick, mHighestVisibleTick;
-  QChar mExponentialChar, mPositiveSignChar;
+  QString mExponentialSymbol, mPositiveSign;
   QVector<double> mTickVector;
   QVector<QString> mTickVectorLabels;
   QVector<double> mSubTickVector;
@@ -1705,9 +1705,14 @@ Q_DECLARE_TYPEINFO(QCPData, Q_MOVABLE_TYPE);
   This is the container in which QCPGraph holds its data.
   \see QCPData, QCPGraph::setData
 */
-typedef QMap<double, QCPData> QCPDataMap;
+typedef QMultiMap<double, QCPData> QCPDataMap;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+typedef QMultiMapIterator<double, QCPData> QCPDataMapIterator;
+typedef QMutableMultiMapIterator<double, QCPData> QCPDataMutableMapIterator;
+#else
 typedef QMapIterator<double, QCPData> QCPDataMapIterator;
 typedef QMutableMapIterator<double, QCPData> QCPDataMutableMapIterator;
+#endif
 
 
 class QCP_LIB_DECL QCPGraph : public QCPAbstractPlottable
@@ -1869,9 +1874,14 @@ Q_DECLARE_TYPEINFO(QCPCurveData, Q_MOVABLE_TYPE);
   \see QCPCurveData, QCPCurve::setData
 */
 
-typedef QMap<double, QCPCurveData> QCPCurveDataMap;
+typedef QMultiMap<double, QCPCurveData> QCPCurveDataMap;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+typedef QMultiMapIterator<double, QCPCurveData> QCPCurveDataMapIterator;
+typedef QMutableMultiMapIterator<double, QCPCurveData> QCPCurveDataMutableMapIterator;
+#else
 typedef QMapIterator<double, QCPCurveData> QCPCurveDataMapIterator;
 typedef QMutableMapIterator<double, QCPCurveData> QCPCurveDataMutableMapIterator;
+#endif
 
 
 class QCP_LIB_DECL QCPCurve : public QCPAbstractPlottable
@@ -1965,9 +1975,14 @@ Q_DECLARE_TYPEINFO(QCPBarData, Q_MOVABLE_TYPE);
   This is the container in which QCPBars holds its data.
   \see QCPBarData, QCPBars::setData
 */
-typedef QMap<double, QCPBarData> QCPBarDataMap;
+typedef QMultiMap<double, QCPBarData> QCPBarDataMap;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+typedef QMultiMapIterator<double, QCPBarData> QCPBarDataMapIterator;
+typedef QMutableMultiMapIterator<double, QCPBarData> QCPBarDataMutableMapIterator;
+#else
 typedef QMapIterator<double, QCPBarData> QCPBarDataMapIterator;
 typedef QMutableMapIterator<double, QCPBarData> QCPBarDataMutableMapIterator;
+#endif
 
 
 class QCP_LIB_DECL QCPBars : public QCPAbstractPlottable

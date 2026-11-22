@@ -1,3 +1,4 @@
+#include <QComboBox>
 #include <QDebug>
 #include <QKeyEvent>
 #include <QSettings>
@@ -50,7 +51,9 @@ MainWindow::MainWindow(QWidget *parent) :
     PortTimeoutTimer->setInterval(3000);
     connect (PortTimeoutTimer, SIGNAL(timeout()), this, SLOT(portTimeoutHandler()));
 
-    connect (UiSettings.cb_Comport, SIGNAL(activated(QString)), this, SLOT(openPort(QString)));
+    connect(UiSettings.cb_Comport, qOverload<int>(&QComboBox::activated), this, [this](int index) {
+        openPort(UiSettings.cb_Comport->itemText(index));
+    });
     connect (Ui->pb_Start, SIGNAL(clicked()), this, SLOT(start()));
     connect (Ui->pb_Stop, SIGNAL(clicked()), this, SLOT(stop()));
 
@@ -59,10 +62,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect (Ui->pb_XFit, SIGNAL(clicked()), this, SLOT(xFit()));
     connect (Ui->pb_YFit, SIGNAL(clicked()), this, SLOT(yFit()));
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0) || QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
     ComPort.setSettingsRestoredOnClose(false);
+#endif
 
     connect (&ComPort, SIGNAL(readyRead()), this, SLOT(readPort()));
-    connect (&ComPort, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(portError(QSerialPort::SerialPortError)));
+    connect(&ComPort, &QSerialPort::errorOccurred, this, &MainWindow::portError);
 
     connect (Ui->actionZeige_Plotfenster, SIGNAL(triggered(bool)), Ui->widget_Plot, SLOT(setVisible(bool)));
     connect (Ui->actionZeige_Log_Einstellungen, SIGNAL(triggered(bool)), Ui->groupBox_Log, SLOT(setVisible(bool)));
@@ -109,7 +114,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     Ui->pb_Stop->setEnabled(false);
 
-    StartTime = QDateTime::currentDateTime().toTime_t();
+    StartTime = QDateTime::currentSecsSinceEpoch();
     StopTime = StartTime + 10;
     xFit();
 
